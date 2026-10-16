@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaRafe Pro - Catálogo de Grabación</title>
+    <!-- SDK de Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <style>
+        /* ==================== ESTILOS GENERALES Y TEMA OSCURO ==================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            min-height: 100vh;
+            padding-bottom: 110px;
+        }
+        header {
+            background-color: #1e293b;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #334155;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .mode-switch {
+            display: flex;
+            gap: 0.5rem;
+            background-color: #0f172a;
+            padding: 0.3rem;
+            border-radius: 8px;
+        }
+        .mode-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+        .mode-btn.active {
+            background-color: #0284c7;
+            color: white;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .section-title {
+            font-size: 1.6rem;
+            margin-bottom: 1.2rem;
+            color: #f1f5f9;
+            border-left: 4px solid #0284c7;
+            padding-left: 0.8rem;
+        }
+        .filter-section {
+            background-color: #1e293b;
+            padding: 1.2rem;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+        .filters-categories {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            background-color: #0f172a;
+            color: #cbd5e1;
+            border: 1px solid #334155;
+            padding: 0.5rem 1.1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.9rem;
+        }
+        .filter-btn.active, .filter-btn:hover {
+            background-color: #38bdf8;
+            color: #0f172a;
+            font-weight: bold;
+        }
+        .filters-year-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding-top: 0.8rem;
+            border-top: 1px solid #334155;
+            flex-wrap: wrap;
+        }
+        .filter-year-box, .filter-search-box {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+        .filters-year-wrapper label {
+            font-size: 0.92rem;
+            color: #e2e8f0;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .select-year {
+            background-color: #0f172a;
+            color: #38bdf8;
+            border: 1px solid #0284c7;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: bold;
+            outline: none;
+            cursor: pointer;
+        }
+        .input-search {
+            background-color: #0f172a;
+            color: #f8fafc;
+            border: 1px solid #0284c7;
+            padding: 0.5rem 0.9rem;
+            border-radius: 6px;
+            outline: none;
+            font-size: 0.9rem;
+            min-width: 220px;
+            transition: 0.2s;
+        }
+        .input-search:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
+        }
+        .catalog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        .card {
+            background-color: #1e293b;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+        }
+        .card-img {
+            width: 100%;
+            height: 310px;
+            object-fit: cover;
+            background-color: #334155;
+        }
+        .badges-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            align-items: flex-end;
+        }
+        .badge-gb {
+            background-color: rgba(15, 23, 42, 0.85);
+            color: #38bdf8;
+            border: 1px solid #38bdf8;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            backdrop-filter: blur(4px);
+        }
+        .badge-year {
+            background-color: rgba(15, 23, 42, 0.85);
+            color: #f59e0b;
+            border: 1px solid #f59e0b;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            backdrop-filter: blur(4px);
+        }
+        .card-body {
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        .card-title {
+            font-size: 1.15rem;
+            margin-bottom: 0.4rem;
+            color: #ffffff;
+        }
+        .card-synopsis {
+            font-size: 0.88rem;
+            color: #94a3b8;
+            line-height: 1.4;
+            margin-bottom: 1rem;
+            flex-grow: 1;
+        }
+        .card-action {
+            margin-top: auto;
+            padding-top: 0.8rem;
+            border-top: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            user-select: none;
+            font-weight: 600;
+            color: #e2e8f0;
+            font-size: 0.9rem;
+        }
+        .checkbox-container input {
+            width: 18px;
+            height: 18px;
+            accent-color: #0284c7;
+            cursor: pointer;
+        }
+        .btn-series-select {
+            background-color: #0284c7;
+            color: white;
+            border: none;
+            padding: 0.6rem 0.8rem;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.2s;
+        }
+        .btn-series-select:hover {
+            background-color: #0369a1;
+        }
+        .selection-summary {
+            font-size: 0.8rem;
+            color: #10b981;
+            font-weight: 600;
+        }
+        .admin-section {
+            background-color: #1e293b;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            border: 1px solid #334155;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .btn-logout {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-delete-item {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.82rem;
+            transition: 0.2s;
+        }
+        .btn-delete-item:hover {
+            background-color: #dc2626;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        .form-group label {
+            font-size: 0.88rem;
+            color: #cbd5e1;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+            padding: 0.6rem;
+            border-radius: 6px;
+            outline: none;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            border-color: #38bdf8;
+        }
+        .seasons-config-box {
+            background-color: #0f172a;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #0284c7;
+            margin-bottom: 1rem;
+        }
+        .season-input-row, .saga-input-row {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-top: 0.6rem;
+            padding: 0.6rem;
+            background-color: #1e293b;
+            border-radius: 6px;
+            flex-wrap: wrap;
+        }
+        .season-input-row label, .saga-input-row label {
+            font-weight: bold;
+            color: #38bdf8;
+            min-width: 90px;
+        }
+        .btn-submit {
+            background-color: #10b981;
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-submit:hover {
+            background-color: #059669;
+        }
+        .orders-table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table {
+            width: 100%;
+            min-width: 600px;
+            border-collapse: collapse;
+            text-align: left;
+            background-color: #0f172a;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 0.9rem;
+            border-bottom: 1px solid #334155;
+        }
+        th {
+            background-color: #1e293b;
+            color: #38bdf8;
+        }
+        .cart-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #1e293b;
+            border-top: 2px solid #0284c7;
+            padding: 0.9rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+            z-index: 99;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .cart-info {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+        .cart-stat {
+            font-size: 1rem;
+        }
+        .cart-stat span {
+            font-weight: bold;
+            color: #38bdf8;
+        }
+        .btn-order {
+            background-color: #0284c7;
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-order:hover {
+            background-color: #0369a1;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background-color: #1e293b;
+            padding: 1.8rem;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 540px;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 1px solid #334155;
+        }
+        .modal-title {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: #38bdf8;
+        }
+        .season-block, .saga-block {
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .season-block-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 1px solid #334155;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .episodes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+            gap: 0.5rem;
+        }
+        .saga-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+        .ep-checkbox-label {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            padding: 0.4rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+        }
+        .btn-modal-cancel {
+            background-color: #64748b;
+            color: white;
+            border: none;
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .error-msg {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        .hidden {
+            display: none !important;
+        }
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .logo { justify-content: center; }
+            .mode-switch { justify-content: center; }
+            .filters-year-wrapper { flex-direction: column; align-items: stretch; }
+            .filter-year-box, .filter-search-box { width: 100%; justify-content: space-between; }
+            .input-search, .select-year { flex-grow: 1; }
+            .cart-bar { flex-direction: column; align-items: stretch; text-align: center; }
+            .cart-info { justify-content: space-around; }
+            .btn-order { width: 100%; }
+        }
+        @media (max-width: 480px) {
+            .catalog-grid { grid-template-columns: 1fr; }
+            .form-grid { grid-template-columns: 1fr; }
+            .season-input-row, .saga-input-row { flex-direction: column; align-items: stretch; }
+            .season-input-row input, .saga-input-row input { width: 100% !important; }
+            .modal-content { padding: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">🎬 MediaRafe Pro</div>
+        <div class="mode-switch">
+            <button class="mode-btn active" id="btn-client-mode" onclick="switchMode('client')">Vista Cliente</button>
+            <button class="mode-btn" id="btn-admin-mode" onclick="switchMode('admin')">Panel Admin</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div id="view-client">
+            <div class="filter-section">
+                <div class="filters-categories">
+                    <button class="filter-btn active" onclick="filterCategory('todos', this)">Todos</button>
+                    <button class="filter-btn" onclick="filterCategory('Película', this)">Películas</button>
+                    <button class="filter-btn" onclick="filterCategory('Serie', this)">Series</button>
+                    <button class="filter-btn" onclick="filterCategory('Película Animada', this)">Películas Animadas</button>
+                    <button class="filter-btn" onclick="filterCategory('Serie Animada', this)">Series Animadas</button>
+                    <button class="filter-btn" onclick="filterCategory('Anime', this)">Animes</button>
+                    <button class="filter-btn" onclick="filterCategory('Documental', this)">Documentales</button>
+                </div>
+                <div class="filters-year-wrapper">
+                    <div class="filter-year-box">
+                        <label for="select-year">📅 Filtrar por Año de Estreno:</label>
+                        <select id="select-year" class="select-year" onchange="filterYear(this.value)">
+                            <option value="todos">Todos los Años</option>
+                        </select>
+                    </div>
+                    <div class="filter-search-box">
+                        <label for="input-search">🔍 Buscar por Nombre:</label>
+                        <input type="text" id="input-search" class="input-search" placeholder="Escribe un título..." oninput="filterSearch(this.value)">
+                    </div>
+                </div>
+            </div>
+            <div class="catalog-grid" id="catalog-grid"></div>
+        </div>
+
+        <div id="view-admin" class="hidden">
+            <div class="admin-header">
+                <h2 class="section-title" style="margin-bottom: 0;">Panel de Administración</h2>
+                <button class="btn-logout" onclick="logoutAdmin()">Cerrar Sesión Admin</button>
+            </div>
+            <div class="admin-section">
+                <h3 style="margin-bottom: 1rem; color: #38bdf8;">1. Añadir Nuevo Contenido al Catálogo</h3>
+                <form id="add-catalog-form" onsubmit="handleAddCatalog(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Título del Contenido</label>
+                            <input type="text" id="input-title" required placeholder="Ej: Harry Potter">
+                        </div>
+                        <div class="form-group">
+                            <label>Categoría</label>
+                            <select id="input-category" onchange="toggleCategoryType()" required>
+                                <option value="Película">Película</option>
+                                <option value="Serie">Serie</option>
+                                <option value="Película Animada">Película Animada</option>
+                                <option value="Serie Animada">Serie Animada</option>
+                                <option value="Anime">Anime</option>
+                                <option value="Documental">Documental</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="movie-type-group">
+                            <label>¿Es una Saga de Películas?</label>
+                            <select id="input-movie-type" onchange="toggleMovieType()">
+                                <option value="individual">No (Película Única)</option>
+                                <option value="saga">Sí (Saga de varias películas)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Año de Salida / Estreno</label>
+                            <input type="number" id="input-year" min="1900" max="2030" required placeholder="Ej: 2024">
+                        </div>
+                        <div class="form-group" id="single-gb-group">
+                            <label>Tamaño en GB</label>
+                            <input type="number" step="0.1" id="input-gb" placeholder="Ej: 15.5">
+                        </div>
+                    </div>
+                    <div id="saga-config" class="seasons-config-box hidden">
+                        <h4 style="color: #38bdf8; margin-bottom: 0.5rem;">🎬 Configuración de Saga de Películas</h4>
+                        <div class="form-group" style="max-width: 260px; margin-bottom: 0.8rem;">
+                            <label>Cantidad de Películas / Partes</label>
+                            <input type="number" id="input-saga-count" min="2" max="30" placeholder="Ej: 3" oninput="generateSagaInputs()">
+                        </div>
+                        <div id="saga-inputs-container"></div>
+                    </div>
+                    <div id="episodic-config" class="seasons-config-box hidden">
+                        <h4 style="color: #38bdf8; margin-bottom: 0.5rem;">⚙️ Configuración de Temporadas y Capítulos</h4>
+                        <div class="form-group" style="max-width: 250px; margin-bottom: 0.8rem;">
+                            <label>Cantidad de Temporadas</label>
+                            <input type="number" id="input-seasons-count" min="1" max="50" placeholder="Ej: 3" oninput="generateSeasonInputs()">
+                        </div>
+                        <div id="seasons-inputs-container"></div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label>URL de la Imagen (Portada)</label>
+                        <input type="url" id="input-image" required placeholder="https://ejemplo.com/foto.jpg">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label>Sinopsis / Descripción</label>
+                        <textarea id="input-synopsis" rows="3" required placeholder="Escribe un breve resumen..."></textarea>
+                    </div>
+                    <button type="submit" class="btn-submit">+ Publicar en el Catálogo</button>
+                </form>
+            </div>
+            <div class="admin-section">
+                <h3 style="margin-bottom: 1rem; color: #38bdf8;">2. Registro de Pedidos de Usuarios</h3>
+                <div class="orders-table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre del Usuario</th>
+                                <th>Contenidos Pedidos</th>
+                                <th>Cantidad de Items</th>
+                                <th>Total Tamaño (GB)</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="admin-section">
+                <h3 style="margin-bottom: 1rem; color: #38bdf8;">3. Gestionar / Eliminar Contenidos del Catálogo</h3>
+                <div class="orders-table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Título</th>
+                                <th>Categoría</th>
+                                <th>Año</th>
+                                <th>Info / Tamaño</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-catalog-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cart-bar" id="cart-bar">
+        <div class="cart-info">
+            <div class="cart-stat">Seleccionados: <span id="cart-count">0</span></div>
+            <div class="cart-stat">Total Peso: <span id="cart-gb">0 GB</span></div>
+        </div>
+        <button class="btn-order" onclick="openModal()">Realizar Pedido</button>
+    </div>
+
+    <div class="modal" id="episodic-select-modal">
+        <div class="modal-content">
+            <h3 class="modal-title" id="episodic-modal-title">Seleccionar Temporadas / Capítulos</h3>
+            <div id="episodic-modal-body"></div>
+            <div style="background-color: #0f172a; padding: 0.8rem; border-radius: 6px; margin: 1rem 0; font-size: 0.9rem; display: flex; justify-content: space-between;">
+                <span>Total Selección de esta serie:</span>
+                <b id="episodic-modal-gb" style="color: #38bdf8;">0 GB</b>
+            </div>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <button type="button" class="btn-modal-cancel" onclick="closeEpisodicModal()">Cancelar</button>
+                <button type="button" class="btn-submit" onclick="saveEpisodicSelection()">Guardar Selección</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="saga-select-modal">
+        <div class="modal-content">
+            <h3 class="modal-title" id="saga-modal-title">Seleccionar Películas de la Saga</h3>
+            <div id="saga-modal-body"></div>
+            <div style="background-color: #0f172a; padding: 0.8rem; border-radius: 6px; margin: 1rem 0; font-size: 0.9rem; display: flex; justify-content: space-between;">
+                <span>Total Selección de esta saga:</span>
+                <b id="saga-modal-gb" style="color: #38bdf8;">0 GB</b>
+            </div>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <button type="button" class="btn-modal-cancel" onclick="closeSagaModal()">Cancelar</button>
+                <button type="button" class="btn-submit" onclick="saveSagaSelection()">Guardar Selección</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="admin-auth-modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Acceso de Administrador</h3>
+            <p style="margin-bottom: 1rem; color: #cbd5e1; font-size: 0.9rem;">Introduce la contraseña de administrador:</p>
+            <form onsubmit="verifyAdminPassword(event)">
+                <div class="form-group" style="margin-bottom: 0.5rem;">
+                    <label>Contraseña</label>
+                    <input type="password" id="admin-pass-input" placeholder="Escribe la clave..." required>
+                </div>
+                <div class="error-msg" id="auth-error">Contraseña incorrecta. Inténtalo de nuevo.</div>
+                <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.2rem;">
+                    <button type="button" class="btn-modal-cancel" onclick="closeAuthModal()">Cancelar</button>
+                    <button type="submit" class="btn-submit">Ingresar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="order-modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Confirmar Pedido de Grabación</h3>
+            <p style="margin-bottom: 1rem; color: #cbd5e1; font-size: 0.9rem;">Introduce tu nombre para registrar tu lista.</p>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label>Tu Nombre Completo</label>
+                <input type="text" id="client-name-input" placeholder="Ej: Carlos Gómez" required>
+            </div>
+            <div style="background-color: #0f172a; padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem;">
+                <div>Total de ítems: <b id="modal-item-count" style="color: #38bdf8;">0</b></div>
+                <div>Espacio requerido: <b id="modal-gb-count" style="color: #38bdf8;">0 GB</b></div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <button type="button" class="btn-modal-cancel" onclick="closeOrderModal()">Cancelar</button>
+                <button type="button" class="btn-submit" onclick="submitOrder()">Enviar Pedido</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== CONFIGURACIÓN DE FIREBASE ====================
+        // Reemplaza esto con los datos de tu proyecto de Firebase
+      // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBAxmiIe-Ssop-wQaNm0I2obtl4F9E2dqg",
+  authDomain: "mediarafe-pro.firebaseapp.com",
+  projectId: "mediarafe-pro",
+  storageBucket: "mediarafe-pro.firebasestorage.app",
+  messagingSenderId: "927896253980",
+  appId: "1:927896253980:web:8d35c05dc09b10398451d9",
+  measurementId: "G-8G3G6S414W"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const ADMIN_PASSWORD = "Hermanos";
+        let isAdminLoggedIn = false;
+
+        const initialCatalog = [
+            {
+                id: 1,
+                title: "Inception (Origen)",
+                category: "Película",
+                year: 2010,
+                gb: 12.5,
+                isEpisodic: false,
+                isSaga: false,
+                image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80",
+                synopsis: "Un ladrón que roba secretos corporativos mediante tecnología de intercambio de sueños."
+            },
+            {
+                id: 2,
+                title: "Stranger Things",
+                category: "Serie",
+                year: 2022,
+                isEpisodic: true,
+                isSaga: false,
+                seasons: [
+                    { seasonNumber: 1, episodesCount: 8, gb: 12.0 },
+                    { seasonNumber: 2, episodesCount: 9, gb: 14.0 },
+                    { seasonNumber: 3, episodesCount: 8, gb: 15.0 },
+                    { seasonNumber: 4, episodesCount: 9, gb: 22.0 }
+                ],
+                image: "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?w=500&q=80",
+                synopsis: "Un grupo de amigos se enfrenta a fuerzas sobrenaturales y experimentos gubernamentales."
+            },
+            {
+                id: 3,
+                title: "El Señor de los Anillos (Saga)",
+                category: "Película",
+                year: 2001,
+                isEpisodic: false,
+                isSaga: true,
+                parts: [
+                    { partNumber: 1, title: "1. La Comunidad del Anillo", gb: 14.5 },
+                    { partNumber: 2, title: "2. Las Dos Torres", gb: 15.0 },
+                    { partNumber: 3, title: "3. El Retorno del Rey", gb: 16.2 }
+                ],
+                image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80",
+                synopsis: "La aventura épica a través de la Tierra Media para destruir el Anillo Único."
+            },
+            {
+                id: 4,
+                title: "Spider-Man: Across the Spider-Verse",
+                category: "Película Animada",
+                year: 2023,
+                gb: 14.2,
+                isEpisodic: false,
+                isSaga: false,
+                image: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&q=80",
+                synopsis: "Miles Morales es catapultado a través del Multiverso para proteger su existencia."
+            }
+        ];
+
+        let catalog = [];
+        let orders = [];
+        let userSelections = {};
+        let currentCategory = 'todos';
+        let currentYear = 'todos';
+        let currentSearchQuery = '';
+        let currentEditingSeriesId = null;
+        let currentEditingSagaId = null;
+
+        // Sincronización en Tiempo Real con Firestore
+        function initFirestoreListeners() {
+            // Escuchar Catálogo
+            db.collection('catalog').onSnapshot((snapshot) => {
+                if (snapshot.empty) {
+                    // Si la base de datos está vacía, subimos el catálogo inicial por defecto
+                    initialCatalog.forEach(item => {
+                        db.collection('catalog').doc(String(item.id)).set(item);
+                    });
+                } else {
+                    catalog = [];
+                    snapshot.forEach((doc) => {
+                        catalog.push(doc.data());
+                    });
+                    // Ordenar por ID descendiente
+                    catalog.sort((a, b) => b.id - a.id);
+                    updateYearOptions();
+                    renderCatalog();
+                    if (isAdminLoggedIn) renderAdminCatalogTable();
+                }
+            });
+
+            // Escuchar Pedidos
+            db.collection('orders').onSnapshot((snapshot) => {
+                orders = [];
+                snapshot.forEach((doc) => {
+                    orders.push({ firebaseId: doc.id, ...doc.data() });
+                });
+                orders.sort((a, b) => b.id - a.id);
+                if (isAdminLoggedIn) renderOrdersTable();
+            });
+        }
+
+        function isCategoryEpisodic(cat) {
+            return cat === 'Serie' || cat === 'Serie Animada' || cat === 'Anime';
+        }
+
+        function toggleCategoryType() {
+            const cat = document.getElementById('input-category').value;
+            const movieTypeGroup = document.getElementById('movie-type-group');
+            const singleGbGroup = document.getElementById('single-gb-group');
+            const episodicConfig = document.getElementById('episodic-config');
+            const sagaConfig = document.getElementById('saga-config');
+
+            if (isCategoryEpisodic(cat)) {
+                movieTypeGroup.classList.add('hidden');
+                singleGbGroup.classList.add('hidden');
+                sagaConfig.classList.add('hidden');
+                episodicConfig.classList.remove('hidden');
+                document.getElementById('input-gb').removeAttribute('required');
+            } else {
+                movieTypeGroup.classList.remove('hidden');
+                episodicConfig.classList.add('hidden');
+                toggleMovieType();
+            }
+        }
+
+        function toggleMovieType() {
+            const movieType = document.getElementById('input-movie-type').value;
+            const singleGbGroup = document.getElementById('single-gb-group');
+            const sagaConfig = document.getElementById('saga-config');
+
+            if (movieType === 'saga') {
+                singleGbGroup.classList.add('hidden');
+                sagaConfig.classList.remove('hidden');
+                document.getElementById('input-gb').removeAttribute('required');
+            } else {
+                singleGbGroup.classList.remove('hidden');
+                sagaConfig.classList.add('hidden');
+                document.getElementById('input-gb').setAttribute('required', 'true');
+            }
+        }
+
+        function generateSeasonInputs() {
+            const count = parseInt(document.getElementById('input-seasons-count').value) || 0;
+            const container = document.getElementById('seasons-inputs-container');
+            container.innerHTML = '';
+            for (let i = 1; i <= count; i++) {
+                const row = document.createElement('div');
+                row.className = 'season-input-row';
+                row.innerHTML = `
+                    <label>Temporada ${i}:</label>
+                    <input type="number" min="1" class="season-eps" placeholder="N° Capítulos" required style="width: 130px;">
+                    <input type="number" step="0.1" class="season-gb" placeholder="Peso (GB)" required style="width: 130px;">
+                `;
+                container.appendChild(row);
+            }
+        }
+
+        function generateSagaInputs() {
+            const count = parseInt(document.getElementById('input-saga-count').value) || 0;
+            const container = document.getElementById('saga-inputs-container');
+            container.innerHTML = '';
+            for (let i = 1; i <= count; i++) {
+                const row = document.createElement('div');
+                row.className = 'saga-input-row';
+                row.innerHTML = `
+                    <label>Película ${i}:</label>
+                    <input type="text" class="saga-title" placeholder="Ej: Nombre / Parte ${i}" required style="flex-grow: 1; min-width: 150px;">
+                    <input type="number" step="0.1" class="saga-gb" placeholder="Peso (GB)" required style="width: 130px;">
+                `;
+                container.appendChild(row);
+            }
+        }
+
+        function updateYearOptions() {
+            const selectYear = document.getElementById('select-year');
+            if (!selectYear) return;
+            const selectedVal = selectYear.value;
+            const filteredCatalog = currentCategory === 'todos' 
+                ? catalog 
+                : catalog.filter(item => item.category === currentCategory);
+            const years = [...new Set(filteredCatalog.map(item => item.year))].sort((a, b) => b - a);
+            selectYear.innerHTML = '<option value="todos">Todos los Años</option>';
+            years.forEach(yr => {
+                const opt = document.createElement('option');
+                opt.value = yr;
+                opt.textContent = yr;
+                selectYear.appendChild(opt);
+            });
+            if (years.includes(parseInt(selectedVal))) {
+                selectYear.value = selectedVal;
+                currentYear = selectedVal;
+            } else {
+                selectYear.value = 'todos';
+                currentYear = 'todos';
+            }
+        }
+
+        function filterSearch(val) {
+            currentSearchQuery = val;
+            renderCatalog();
+        }
+
+        function renderCatalog() {
+            const grid = document.getElementById('catalog-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            let filtered = catalog;
+
+            if (currentCategory !== 'todos') {
+                filtered = filtered.filter(item => item.category === currentCategory);
+            }
+            if (currentYear !== 'todos') {
+                filtered = filtered.filter(item => String(item.year) === String(currentYear));
+            }
+            if (currentSearchQuery.trim() !== '') {
+                const query = currentSearchQuery.toLowerCase().trim();
+                filtered = filtered.filter(item => item.title.toLowerCase().includes(query));
+            }
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<p style="color: #94a3b8; grid-column: 1/-1; text-align: center; padding: 2rem;">No se encontraron contenidos con este filtro/búsqueda.</p>`;
+                return;
+            }
+
+            filtered.forEach(item => {
+                const selection = userSelections[item.id];
+                const card = document.createElement('div');
+                card.className = 'card';
+                let gbDisplay = item.gb;
+
+                if (item.isEpisodic && item.seasons) {
+                    gbDisplay = item.seasons.reduce((sum, s) => sum + Number(s.gb), 0).toFixed(1);
+                } else if (item.isSaga && item.parts) {
+                    gbDisplay = item.parts.reduce((sum, p) => sum + Number(p.gb), 0).toFixed(1);
+                }
+
+                let actionHTML = '';
+                if (item.isEpisodic) {
+                    const selectedText = selection && selection.gb > 0 
+                        ? `<span class="selection-summary">✓ ${selection.gb.toFixed(1)} GB seleccionados</span>` 
+                        : `<span style="font-size:0.8rem; color:#94a3b8;">Sin capítulos marcados</span>`;
+                    actionHTML = `
+                        ${selectedText}
+                        <button class="btn-series-select" onclick="openEpisodicModal(${item.id})">📋 Seleccionar Temporadas / Capítulos</button>
+                    `;
+                } else if (item.isSaga) {
+                    const selectedText = selection && selection.gb > 0 
+                        ? `<span class="selection-summary">✓ ${selection.gb.toFixed(1)} GB seleccionados</span>` 
+                        : `<span style="font-size:0.8rem; color:#94a3b8;">Sin partes seleccionadas</span>`;
+                    actionHTML = `
+                        ${selectedText}
+                        <button class="btn-series-select" onclick="openSagaModal(${item.id})">🎬 Seleccionar Películas de la Saga</button>
+                    `;
+                } else {
+                    const isChecked = selection ? 'checked' : '';
+                    actionHTML = `
+                        <label class="checkbox-container">
+                            <input type="checkbox" ${isChecked} onchange="toggleSingleSelect(${item.id})">
+                            Marcar para grabar (${item.gb} GB)
+                        </label>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="badges-container">
+                        <span class="badge-gb">${gbDisplay} GB</span>
+                        <span class="badge-year">📅 ${item.year}</span>
+                    </div>
+                    <img src="${item.image}" class="card-img" alt="${item.title}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'300\\' height=\\'400\\' style=\\'background:%23334155;\\'><text x=\\'50%\\' y=\\'50%\\' fill=\\'%23cbd5e1\\' font-size=\\'18\\' text-anchor=\\'middle\\'>Sin Imagen</text></svg>'">
+                    <div class="card-body">
+                        <h3 class="card-title">${item.title}</h3>
+                        <p class="card-synopsis">${item.synopsis}</p>
+                        <div class="card-action">${actionHTML}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function toggleSingleSelect(id) {
+            const item = catalog.find(i => i.id === id);
+            if (!item) return;
+            if (userSelections[id]) {
+                delete userSelections[id];
+            } else {
+                userSelections[id] = {
+                    isEpisodic: false,
+                    isSaga: false,
+                    title: `${item.title} (${item.year})`,
+                    gb: Number(item.gb),
+                    details: 'Completa'
+                };
+            }
+            updateCartBar();
+            renderCatalog();
+        }
+
+        function openSagaModal(itemId) {
+            const item = catalog.find(i => i.id === itemId);
+            if (!item || !item.parts) return;
+            currentEditingSagaId = itemId;
+            document.getElementById('saga-modal-title').innerText = `Saga: ${item.title}`;
+            const container = document.getElementById('saga-modal-body');
+            container.innerHTML = '';
+            const currentSel = userSelections[itemId] || { partsSelected: [] };
+            const selectedParts = currentSel.partsSelected || [];
+            const sagaBlock = document.createElement('div');
+            sagaBlock.className = 'saga-block';
+            let sagaListHTML = '';
+
+            item.parts.forEach((part) => {
+                const isChecked = selectedParts.includes(part.partNumber) ? 'checked' : '';
+                sagaListHTML += `
+                    <label class="ep-checkbox-label">
+                        <input type="checkbox" class="saga-part-check" data-part="${part.partNumber}" data-gb="${part.gb}" ${isChecked} onchange="recalcSagaModalGB()">
+                        <span><b>${part.title}</b> (${part.gb} GB)</span>
+                    </label>
+                `;
+            });
+            sagaBlock.innerHTML = `<div class="saga-list">${sagaListHTML}</div>`;
+            container.appendChild(sagaBlock);
+            recalcSagaModalGB();
+            document.getElementById('saga-select-modal').classList.add('active');
+        }
+
+        function recalcSagaModalGB() {
+            let totalGB = 0;
+            document.querySelectorAll('.saga-part-check:checked').forEach(cb => {
+                totalGB += parseFloat(cb.dataset.gb) || 0;
+            });
+            document.getElementById('saga-modal-gb').innerText = totalGB.toFixed(1) + ' GB';
+        }
+
+        function closeSagaModal() {
+            document.getElementById('saga-select-modal').classList.remove('active');
+        }
+
+        function saveSagaSelection() {
+            const item = catalog.find(i => i.id === currentEditingSagaId);
+            if (!item) return;
+            let totalGB = 0;
+            let partsSelected = [];
+            let detailsArr = [];
+
+            document.querySelectorAll('.saga-part-check:checked').forEach(cb => {
+                const partNum = parseInt(cb.dataset.part);
+                const partGB = parseFloat(cb.dataset.gb);
+                const partObj = item.parts.find(p => p.partNumber === partNum);
+                partsSelected.push(partNum);
+                totalGB += partGB;
+                detailsArr.push(partObj ? partObj.title : `Parte ${partNum}`);
+            });
+
+            if (partsSelected.length > 0) {
+                userSelections[item.id] = {
+                    isSaga: true,
+                    title: `${item.title} (${item.year})`,
+                    gb: totalGB,
+                    details: detailsArr.join(', '),
+                    partsSelected: partsSelected
+                };
+            } else {
+                delete userSelections[item.id];
+            }
+            closeSagaModal();
+            updateCartBar();
+            renderCatalog();
+        }
+
+        function openEpisodicModal(itemId) {
+            const item = catalog.find(i => i.id === itemId);
+            if (!item || !item.seasons) return;
+            currentEditingSeriesId = itemId;
+            document.getElementById('episodic-modal-title').innerText = `Seleccionar: ${item.title}`;
+            const container = document.getElementById('episodic-modal-body');
+            container.innerHTML = '';
+            const currentSel = userSelections[itemId] || { episodesSelected: {} };
+
+            item.seasons.forEach(season => {
+                const seasonNum = season.seasonNumber;
+                const selectedEps = currentSel.episodesSelected ? (currentSel.episodesSelected[seasonNum] || []) : [];
+                const isAllSelected = selectedEps.length === season.episodesCount;
+                const block = document.createElement('div');
+                block.className = 'season-block';
+                let epsGridHTML = '';
+
+                for (let ep = 1; ep <= season.episodesCount; ep++) {
+                    const isEpChecked = selectedEps.includes(ep) ? 'checked' : '';
+                    epsGridHTML += `
+                        <label class="ep-checkbox-label">
+                            <input type="checkbox" class="ep-check-s${seasonNum}" data-season="${seasonNum}" data-ep="${ep}" ${isEpChecked} onchange="recalcEpisodicModalGB()">
+                            Cap. ${ep}
+                        </label>
+                    `;
+                }
+
+                block.innerHTML = `
+                    <div class="season-block-header">
+                        <div><b>Temporada ${seasonNum}</b> <span style="font-size: 0.85rem; color: #38bdf8;">(${season.episodesCount} caps - ${season.gb} GB)</span></div>
+                        <label class="checkbox-container" style="font-size: 0.82rem;">
+                            <input type="checkbox" id="all-s${seasonNum}" ${isAllSelected ? 'checked' : ''} onchange="toggleAllSeasonEps(${seasonNum}, this.checked)">
+                            Toda la T${seasonNum}
+                        </label>
+                    </div>
+                    <div class="episodes-grid">${epsGridHTML}</div>
+                `;
+                container.appendChild(block);
+            });
+            recalcEpisodicModalGB();
+            document.getElementById('episodic-select-modal').classList.add('active');
+        }
+
+        function closeEpisodicModal() {
+            document.getElementById('episodic-select-modal').classList.remove('active');
+        }
+
+        function toggleAllSeasonEps(seasonNum, isChecked) {
+            document.querySelectorAll(`.ep-check-s${seasonNum}`).forEach(cb => cb.checked = isChecked);
+            recalcEpisodicModalGB();
+        }
+
+        function recalcEpisodicModalGB() {
+            const item = catalog.find(i => i.id === currentEditingSeriesId);
+            if (!item) return;
+            let totalGB = 0;
+            item.seasons.forEach(season => {
+                const seasonNum = season.seasonNumber;
+                const checkboxes = document.querySelectorAll(`.ep-check-s${seasonNum}:checked`);
+                const epGB = Number(season.gb) / season.episodesCount;
+                if (checkboxes.length === season.episodesCount) {
+                    totalGB += Number(season.gb);
+                    if(document.getElementById(`all-s${seasonNum}`)) document.getElementById(`all-s${seasonNum}`).checked = true;
+                } else {
+                    totalGB += checkboxes.length * epGB;
+                    if(document.getElementById(`all-s${seasonNum}`)) document.getElementById(`all-s${seasonNum}`).checked = false;
+                }
+            });
+            document.getElementById('episodic-modal-gb').innerText = totalGB.toFixed(1) + ' GB';
+        }
+
+        function saveEpisodicSelection() {
+            const item = catalog.find(i => i.id === currentEditingSeriesId);
+            if (!item) return;
+            let totalGB = 0;
+            let episodesSelected = {};
+            let detailsArr = [];
+
+            item.seasons.forEach(season => {
+                const seasonNum = season.seasonNumber;
+                const checkedEps = Array.from(document.querySelectorAll(`.ep-check-s${seasonNum}:checked`)).map(cb => parseInt(cb.dataset.ep));
+                if (checkedEps.length > 0) {
+                    episodesSelected[seasonNum] = checkedEps;
+                    const epGB = Number(season.gb) / season.episodesCount;
+                    if (checkedEps.length === season.episodesCount) {
+                        totalGB += Number(season.gb);
+                        detailsArr.push(`T${seasonNum} Completa`);
+                    } else {
+                        totalGB += checkedEps.length * epGB;
+                        detailsArr.push(`T${seasonNum} (Caps: ${checkedEps.join(',')})`);
+                    }
+                }
+            });
+
+            if (detailsArr.length > 0) {
+                userSelections[item.id] = {
+                    isEpisodic: true,
+                    title: `${item.title} (${item.year})`,
+                    gb: totalGB,
+                    details: detailsArr.join(' | '),
+                    episodesSelected: episodesSelected
+                };
+            } else {
+                delete userSelections[item.id];
+            }
+            closeEpisodicModal();
+            updateCartBar();
+            renderCatalog();
+        }
+
+        function updateCartBar() {
+            let count = Object.keys(userSelections).length;
+            let totalGB = 0;
+            Object.values(userSelections).forEach(sel => totalGB += sel.gb);
+            document.getElementById('cart-count').innerText = count;
+            document.getElementById('cart-gb').innerText = totalGB.toFixed(1) + ' GB';
+        }
+
+        function filterCategory(cat, btn) {
+            currentCategory = cat;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            updateYearOptions();
+            renderCatalog();
+        }
+
+        function filterYear(yearVal) {
+            currentYear = yearVal;
+            renderCatalog();
+        }
+
+        function switchMode(mode) {
+            if (mode === 'admin') {
+                if (!isAdminLoggedIn) {
+                    document.getElementById('admin-auth-modal').classList.add('active');
+                } else {
+                    showAdminPanel();
+                }
+            } else {
+                showClientPanel();
+            }
+        }
+
+        function verifyAdminPassword(e) {
+            e.preventDefault();
+            const pass = document.getElementById('admin-pass-input').value;
+            const errorMsg = document.getElementById('auth-error');
+            if (pass === ADMIN_PASSWORD) {
+                isAdminLoggedIn = true;
+                errorMsg.style.display = 'none';
+                document.getElementById('admin-pass-input').value = '';
+                closeAuthModal();
+                showAdminPanel();
+            } else {
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        function closeAuthModal() {
+            document.getElementById('admin-auth-modal').classList.remove('active');
+            document.getElementById('auth-error').style.display = 'none';
+            document.getElementById('admin-pass-input').value = '';
+        }
+
+        function logoutAdmin() {
+            isAdminLoggedIn = false;
+            showClientPanel();
+        }
+
+        function showAdminPanel() {
+            document.getElementById('view-client').classList.add('hidden');
+            document.getElementById('view-admin').classList.remove('hidden');
+            document.getElementById('cart-bar').classList.add('hidden');
+            document.getElementById('btn-client-mode').classList.remove('active');
+            document.getElementById('btn-admin-mode').classList.add('active');
+            renderOrdersTable();
+            renderAdminCatalogTable();
+        }
+
+        function showClientPanel() {
+            document.getElementById('view-admin').classList.add('hidden');
+            document.getElementById('view-client').classList.remove('hidden');
+            document.getElementById('cart-bar').classList.remove('hidden');
+            document.getElementById('btn-admin-mode').classList.remove('active');
+            document.getElementById('btn-client-mode').classList.add('active');
+        }
+
+        function handleAddCatalog(e) {
+            e.preventDefault();
+            const title = document.getElementById('input-title').value;
+            const category = document.getElementById('input-category').value;
+            const year = parseInt(document.getElementById('input-year').value);
+            const image = document.getElementById('input-image').value;
+            const synopsis = document.getElementById('input-synopsis').value;
+
+            let newItem = {
+                id: Date.now(),
+                title,
+                category,
+                year,
+                image,
+                synopsis
+            };
+
+            if (isCategoryEpisodic(category)) {
+                newItem.isEpisodic = true;
+                newItem.isSaga = false;
+                newItem.seasons = [];
+                document.querySelectorAll('.season-input-row').forEach((row, idx) => {
+                    const eps = parseInt(row.querySelector('.season-eps').value) || 1;
+                    const gb = parseFloat(row.querySelector('.season-gb').value) || 0;
+                    newItem.seasons.push({ seasonNumber: idx + 1, episodesCount: eps, gb: gb });
+                });
+                if (newItem.seasons.length === 0) {
+                    alert('Por favor indica al menos 1 temporada.');
+                    return;
+                }
+            } else {
+                const movieType = document.getElementById('input-movie-type').value;
+                if (movieType === 'saga') {
+                    newItem.isEpisodic = false;
+                    newItem.isSaga = true;
+                    newItem.parts = [];
+                    document.querySelectorAll('.saga-input-row').forEach((row, idx) => {
+                        const partTitle = row.querySelector('.saga-title').value || `Parte ${idx + 1}`;
+                        const gb = parseFloat(row.querySelector('.saga-gb').value) || 0;
+                        newItem.parts.push({ partNumber: idx + 1, title: partTitle, gb: gb });
+                    });
+                    if (newItem.parts.length === 0) {
+                        alert('Por favor indica la cantidad de películas de la saga.');
+                        return;
+                    }
+                } else {
+                    newItem.isEpisodic = false;
+                    newItem.isSaga = false;
+                    newItem.gb = parseFloat(document.getElementById('input-gb').value) || 0;
+                }
+            }
+
+            // Guardar en Firestore
+            db.collection('catalog').doc(String(newItem.id)).set(newItem)
+                .then(() => {
+                    document.getElementById('add-catalog-form').reset();
+                    document.getElementById('seasons-inputs-container').innerHTML = '';
+                    document.getElementById('saga-inputs-container').innerHTML = '';
+                    toggleCategoryType();
+                    alert('¡Contenido publicado con éxito en el catálogo en la nube!');
+                })
+                .catch((error) => {
+                    console.error("Error al añadir: ", error);
+                    alert("Hubo un error al guardar en la base de datos.");
+                });
+        }
+
+        function deleteCatalogItem(id) {
+            const item = catalog.find(i => i.id === id);
+            if (!item) return;
+            if (confirm(`¿Estás seguro de que deseas eliminar "${item.title}" del catálogo?`)) {
+                db.collection('catalog').doc(String(id)).delete()
+                    .then(() => {
+                        if (userSelections[id]) {
+                            delete userSelections[id];
+                            updateCartBar();
+                        }
+                        alert('El contenido ha sido eliminado correctamente.');
+                    })
+                    .catch((error) => {
+                        alert('Error al eliminar de la base de datos.');
+                    });
+            }
+        }
+
+        function deleteOrder(firebaseId, userName) {
+            if (confirm(`¿Deseas eliminar el pedido realizado por "${userName}"?`)) {
+                db.collection('orders').doc(firebaseId).delete()
+                    .then(() => {
+                        alert('El pedido ha sido eliminado correctamente.');
+                    })
+                    .catch((error) => {
+                        alert('Error al eliminar el pedido.');
+                    });
+            }
+        }
+
+        function renderAdminCatalogTable() {
+            const tbody = document.getElementById('admin-catalog-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (catalog.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="color: #94a3b8; text-align: center;">El catálogo está actualmente vacío.</td></tr>`;
+                return;
+            }
+            catalog.forEach(item => {
+                let infoText = '';
+                if (item.isEpisodic && item.seasons) {
+                    const totalGB = item.seasons.reduce((s, season) => s + Number(season.gb), 0).toFixed(1);
+                    infoText = `${item.seasons.length} Temp. (${totalGB} GB total)`;
+                } else if (item.isSaga && item.parts) {
+                    const totalGB = item.parts.reduce((s, part) => s + Number(part.gb), 0).toFixed(1);
+                    infoText = `${item.parts.length} Películas (Saga - ${totalGB} GB total)`;
+                } else {
+                    infoText = `${item.gb} GB`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight: bold; color: #ffffff;">${item.title}</td>
+                    <td><span style="background: #334155; padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.85rem; color: #38bdf8;">${item.category}</span></td>
+                    <td>📅 ${item.year}</td>
+                    <td style="color: #cbd5e1; font-size: 0.9rem;">${infoText}</td>
+                    <td>
+                        <button class="btn-delete-item" onclick="deleteCatalogItem(${item.id})">🗑️ Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderOrdersTable() {
+            const tbody = document.getElementById('orders-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (orders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="color: #94a3b8; text-align: center;">No hay pedidos registrados todavía.</td></tr>`;
+                return;
+            }
+            orders.forEach(order => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight: bold; color: #ffffff;">${order.userName}</td>
+                    <td style="color: #cbd5e1; font-size: 0.88rem;">${order.detailsText}</td>
+                    <td><span style="background: #0284c7; padding: 0.2rem 0.6rem; border-radius: 10px; font-size: 0.85rem;">${order.totalItems} contenidos</span></td>
+                    <td style="font-weight: bold; color: #38bdf8;">${order.totalGB.toFixed(1)} GB</td>
+                    <td>
+                        <button class="btn-delete-item" onclick="deleteOrder('${order.firebaseId}', '${order.userName}')">🗑️ Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openModal() {
+            const count = Object.keys(userSelections).length;
+            if (count === 0) {
+                alert('Por favor, marca al menos un contenido o película para realizar el pedido.');
+                return;
+            }
+            let totalGB = 0;
+            Object.values(userSelections).forEach(sel => totalGB += sel.gb);
+            document.getElementById('modal-item-count').innerText = count;
+            document.getElementById('modal-gb-count').innerText = totalGB.toFixed(1) + ' GB';
+            document.getElementById('order-modal').classList.add('active');
+        }
+
+        function closeOrderModal() {
+            document.getElementById('order-modal').classList.remove('active');
+        }
+
+        function submitOrder() {
+            const nameInput = document.getElementById('client-name-input').value.trim();
+            if (!nameInput) {
+                alert('Por favor escribe tu nombre completo.');
+                return;
+            }
+            let detailsList = [];
+            let totalGB = 0;
+            Object.values(userSelections).forEach(sel => {
+                detailsList.push(`• <b>${sel.title}</b> [${sel.details}]`);
+                totalGB += sel.gb;
+            });
+            const newOrder = {
+                id: Date.now(),
+                userName: nameInput,
+                detailsText: detailsList.join('<br>'),
+                totalItems: Object.keys(userSelections).length,
+                totalGB: totalGB
+            };
+
+            // Guardar pedido en Firestore
+            db.collection('orders').add(newOrder)
+                .then(() => {
+                    userSelections = {};
+                    updateCartBar();
+                    renderCatalog();
+                    closeOrderModal();
+                    document.getElementById('client-name-input').value = '';
+                    alert('¡Tu pedido ha sido enviado a la nube para el administrador!');
+                })
+                .catch((error) => {
+                    alert('Error al enviar el pedido.');
+                });
+        }
+
+        // Inicializar al cargar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            initFirestoreListeners();
+        });
+    </script>
+</body>
+</html>
